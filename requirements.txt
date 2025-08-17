@@ -1,0 +1,17 @@
+flask
+flask-cors
+tensorflow
+keras-tuner
+python-dotenv
+joblib
+requests
+seaborn
+pandas-ta
+keras
+numpy
+pandas
+scikit-learn
+matplotlib
+yfinance
+lxml
+pyarrow

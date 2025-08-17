@@ -1,0 +1,13 @@
+venv_tf/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+data/
+training/keras_tuner_dir_stock/
+training/plots/
+backend/ml_inference/model/*.keras
+backend/ml_inference/model/*.pkl
+.env
+.vscode/
