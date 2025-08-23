@@ -1,0 +1,87 @@
+.companyInfo {
+  background-color: white;
+  border-radius: 0px 12px 12px 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.companyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.companyMain {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.companyLogo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  padding: 0.25rem;
+  border: 1px solid #e2e8f0;
+}
+
+.companyTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: left;
+}
+
+.companyTitle h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tickerSymbol {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: normal;
+}
+
+.companySector {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.marketData {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 250px;
+}
+
+.marketDataItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 6px;
+}
+
+.label {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.value {
+  color: #1e293b;
+  font-weight: 500;
+  font-size: 0.875rem;
+}

@@ -13,6 +13,13 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+#root {
+  width: 100%;
+  max-width: 1700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -45,9 +52,6 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
 }
 button:focus,
 button:focus-visible {

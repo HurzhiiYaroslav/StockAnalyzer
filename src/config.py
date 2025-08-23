@@ -1,19 +1,14 @@
-# src/config.py
-
 import os
 from datetime import datetime, timedelta
 import pandas as pd
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
 
 # ==============================================================================
 # API CONFIGURATION
 # ==============================================================================
-# For https://logo.dev/
 LOGO_API_KEY = os.getenv("LOGO_API_KEY")
-# For https://datajockey.io/
 DATAJOCKEY_API_KEY = os.getenv("DATAJOCKEY_API_KEY")
 DATAJOCKEY_BASE_URL = "https://api.datajockey.io/v0/company/financials"
 DATAJOCKEY_DEFAULT_PERIOD = "Q"
@@ -21,35 +16,28 @@ DATAJOCKEY_DEFAULT_PERIOD = "Q"
 # ==============================================================================
 # DIRECTORY AND FILE PATHS
 # ==============================================================================
-# Base directories
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Project Root
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT_DIR, 'data')
 TRAINING_DIR = os.path.join(ROOT_DIR, 'training')
 BACKEND_DIR = os.path.join(ROOT_DIR, 'backend')
 
-# Subdirectories
 RAW_DATA_DIR = os.path.join(DATA_DIR, 'raw')
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
 PRICE_CACHE_DIR = os.path.join(DATA_DIR, 'price_cache')
-MODEL_SAVE_DIR = os.path.join(BACKEND_DIR, 'ml_inference/model/')
+MODELS_DIR = os.path.join(BACKEND_DIR, 'ml_inference/models/')
 PLOTS_DIR = os.path.join(TRAINING_DIR, 'plots')
 
-# File names
+# --- File Names ---
 FINAL_TRAINING_DATA_FILE_NAME = 'training_data.csv'
 MODEL_FILE_NAME = 'trained_nn_coral_model.keras'
-COLUMNS_FILE_NAME = 'training_columns_nn.pkl'
-SCALER_FILE_NAME = 'scaler_nn.pkl'
+NORMALIZATION_PARAMS_FILE_NAME = 'normalization_parameters.feather'
+FEATURE_COLUMNS_FILE_NAME = 'feature_columns.json'
 
-# Full file paths
 FINAL_TRAINING_DATA_PATH = os.path.join(PROCESSED_DATA_DIR, FINAL_TRAINING_DATA_FILE_NAME)
-MODEL_PATH = os.path.join(MODEL_SAVE_DIR, MODEL_FILE_NAME)
-COLUMNS_PATH = os.path.join(MODEL_SAVE_DIR, COLUMNS_FILE_NAME)
-SCALER_PATH = os.path.join(MODEL_SAVE_DIR, SCALER_FILE_NAME)
 
 # ==============================================================================
 # TICKER & DATE CONFIGURATION
 # ==============================================================================
-# Default list of tickers, used as a fallback if scraping fails
 DEF_TICKERS = [
     'AAPL', 'ABBV', 'ABT', 'ACN', 'ADBE', 'AMZN', 'AVGO', 'BAC', 'BMY', 
     'BRK-B', 'CAT', 'COST', 'CRM', 'CSCO', 'CVX', 'DHR', 'DIS', 'GOOGL', 
@@ -60,20 +48,13 @@ DEF_TICKERS = [
 ]
 
 def get_sp500_tickers(cache_file='sp500_tickers.csv', max_age_days=3):
-    """
-    Retrieves the list of S&P 500 tickers, using a local cache file to avoid
-    downloading it every time.
-    """
     cache_path = os.path.join(DATA_DIR, cache_file)
     
     if os.path.exists(cache_path):
         file_mod_time = datetime.fromtimestamp(os.path.getmtime(cache_path))
         if (datetime.now() - file_mod_time) < timedelta(days=max_age_days):
-            print("Loading S&P 500 tickers from local cache file...")
             df = pd.read_csv(cache_path)
             return df['Symbol'].tolist()
-
-    print("Downloading fresh list of S&P 500 tickers from Wikipedia...")
     try:
         url = 'https://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
         tables = pd.read_html(url)
@@ -81,7 +62,6 @@ def get_sp500_tickers(cache_file='sp500_tickers.csv', max_age_days=3):
         tickers = sp500_table['Symbol'].tolist()
         tickers = [ticker.replace('.', '-') for ticker in tickers]
         
-        # Save the new list to cache file
         os.makedirs(DATA_DIR, exist_ok=True)
         sp500_table[['Symbol']].to_csv(cache_path, index=False)
         
@@ -91,13 +71,28 @@ def get_sp500_tickers(cache_file='sp500_tickers.csv', max_age_days=3):
         print(f"Could not retrieve S&P 500 tickers: {e}. Using default list.")
         return DEF_TICKERS
     
-# Get the list of tickers dynamically
 TICKERS = get_sp500_tickers()
 START_DATE = "2007-01-01"
 END_DATE = datetime.now().strftime("%Y-%m-%d")
 
 # ==============================================================================
+# TECHNICAL INDICATOR PARAMETERS
+# ==============================================================================
+TREND_PERIODS = [10, 20, 50, 60, 100, 200, 252, 504]
+MOMENTUM_PERIODS = [14, 30, 50, 100, 200, 252, 504]
+VOLATILITY_PERIODS = [14, 20, 50, 100, 200, 252, 504]
+BOLLINGER_BANDS_PERIODS = [20, 50, 100, 200]
+VOLUME_PERIODS = [252, 504]
+OBV_PERIODS = [60, 100, 200, 252, 504]
+PRICE_RISK_PERIODS = [21, 63, 126, 252, 504]
+SHARPE_RATIO_PERIODS = [60, 120, 252, 504]
+STOCHASTIC_PERIODS = [14, 50, 100, 200]
+ADX_PERIODS = [14, 50, 100]
+MACD_MULTIPLIERS = [1, 3, 5, 7, 9]
+
+# ==============================================================================
 # DATA PROCESSING AND MODEL PARAMETERS
 # ==============================================================================
 FUTURE_RETURN_HORIZON_DAYS = 252
-NUM_CLASSES = 10
+NUM_CLASSES = 5
+TECHNICAL_INDICATOR_PREFIXES  = ('SMA', 'RSI', 'ATR', 'BB', 'MACD', 'Stoch', 'ADX', 'Price_vs', 'Return', 'volatility', 'Sharpe', 'Volume', 'OBV')

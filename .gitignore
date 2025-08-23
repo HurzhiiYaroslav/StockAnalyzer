@@ -6,8 +6,8 @@ __pycache__/
 *.pyd
 data/
 training/keras_tuner_dir_stock/
+training/keras_tuner_dir/
 training/plots/
-backend/ml_inference/model/*.keras
-backend/ml_inference/model/*.pkl
+backend/ml_inference/models/
 .env
 .vscode/

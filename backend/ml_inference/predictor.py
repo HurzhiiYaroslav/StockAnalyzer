@@ -1,57 +1,123 @@
+import os
+import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow import keras 
 import joblib
+import json
+from datetime import datetime, timedelta
 from src import config
+from src.services import feature_engineering
+from src.services import artifact_manager
+from src.services.ml_utils import CoralLoss, coral_loss , coral_logits_to_probs, coral_probs_to_rank
 
-_model = None
-_scaler = None
-_training_columns = None
+_CACHED_ARTIFACTS = {
+    "model_run_id": None, "model": None, "scaler": None,
+    "params": None, "feature_columns": None
+}
 
-@tf.keras.utils.register_keras_serializable()
-def coral_loss(y_true, y_pred): return tf.reduce_mean(tf.keras.losses.binary_crossentropy(y_true, y_pred, from_logits=True))
+def _load_artifacts_if_needed(model_run_id: str):
+    """Loads model and components if they are not cached or if the model_run_id has changed."""
+    global _CACHED_ARTIFACTS
+    if _CACHED_ARTIFACTS["model_run_id"] == model_run_id and _CACHED_ARTIFACTS["model"] is not None:
+        print(f"Using cached artifacts for model run: {model_run_id}")
+        return
 
-def coral_logits_to_probs(logits):
-    return tf.math.sigmoid(logits)
+    print(f"Loading artifacts for model run: {model_run_id}...")
+    run_dir = artifact_manager.get_model_run_dir(model_run_id)
+    
+    params, feature_columns = artifact_manager.load_parameters(model_run_id)
+    
+    model_path = os.path.join(run_dir, config.MODEL_FILE_NAME)
+    with keras.utils.custom_object_scope({'CoralLoss': CoralLoss}):
+        model = tf.keras.models.load_model(model_path)
+    
+    scaler_path = os.path.join(run_dir, 'standard_scaler.joblib')
+    scaler = joblib.load(scaler_path)
+    
+    _CACHED_ARTIFACTS = {
+        "model_run_id": model_run_id, "model": model, "scaler": scaler,
+        "params": params, "feature_columns": feature_columns
+    }
+    print("Artifacts loaded and cached successfully.")
 
-def coral_probs_to_rank(probs):
-    return tf.reduce_sum(tf.cast(probs > 0.5, dtype=tf.int32), axis=1) + 1
+def _prepare_features_for_prediction(raw_features_df: pd.DataFrame, model_run_id: str) -> pd.DataFrame:
+    """Applies all necessary transformations to raw features before prediction."""
+    _load_artifacts_if_needed(model_run_id)
+    
+    params = _CACHED_ARTIFACTS["params"]
+    feature_columns = _CACHED_ARTIFACTS["feature_columns"]
+    
+    metrics_to_normalize = [col.replace('_z_score', '') for col in feature_columns if col.endswith('_z_score')]
+    
+    transformed_features = artifact_manager.apply_transformations(
+        raw_features_df, params, metrics_to_normalize
+    )
 
-def _load_model_and_components():
-    global _model, _scaler, _training_columns
-    if _model is None:
-        print("Loading model and components for the first time...")
-        _model = tf.keras.models.load_model(config.MODEL_PATH, custom_objects={'coral_loss': coral_loss})
-        _scaler = joblib.load(config.SCALER_PATH)
-        _training_columns = joblib.load(config.COLUMNS_PATH)
-    return _model, _scaler, _training_columns
+    aligned_df = pd.DataFrame(0, index=transformed_features.index, columns=feature_columns)
+    common_cols = aligned_df.columns.intersection(transformed_features.columns)
+    aligned_df[common_cols] = transformed_features[common_cols]
+    
+    meta_cols = ['date', 'ticker', 'sector']
+    features_only_df = aligned_df.drop(columns=meta_cols, errors='ignore')
+    
+    return features_only_df
 
-@tf.function(reduce_retracing=True)
-def _predict_step(X_scaled):
-    model, _, _ = _load_model_and_components()
-    logits = model(X_scaled, training=False)
-    probs = coral_logits_to_probs(logits)
-    return coral_probs_to_rank(probs)
-
-def predict_from_features(features_df: pd.DataFrame) -> int:
+def predict(ticker_symbol: str, model_run_id: str) -> dict:
+    """Generates a full prediction and display data package for a single ticker."""
     try:
-        _, scaler, training_columns = _load_model_and_components()
+        _load_artifacts_if_needed(model_run_id)
 
-        X = pd.DataFrame(columns=training_columns, index=features_df.index)
-
-        common_columns = X.columns.intersection(features_df.columns)
-        X[common_columns] = features_df[common_columns]
-
-        missing_columns = set(training_columns) - set(common_columns)
-        if missing_columns:
-            print(f"Warning: Missing columns will be imputed: {missing_columns}")
-
-        X_scaled_partial = scaler.transform(X)
-        X_scaled_df = pd.DataFrame(X_scaled_partial, columns=training_columns, index=X.index)
-        X_scaled_df.fillna(0, inplace=True)
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=800)
         
-        predicted_ratings = _predict_step(X_scaled_df.values)
-        return int(predicted_ratings[0])
+        raw_features_df, _ = feature_engineering.generate_features_for_ticker(
+            ticker_symbol=ticker_symbol,
+            start_date_str=start_date.strftime('%Y-%m-%d'),
+            end_date_str=end_date.strftime('%Y-%m-%d')
+        )
+        if raw_features_df.empty:
+            return {"error": f"Could not generate features for {ticker_symbol}."}
         
+        latest_raw_features = raw_features_df.iloc[-1:]
+
+        prepared_features = _prepare_features_for_prediction(latest_raw_features, model_run_id)
+
+        scaler = _CACHED_ARTIFACTS["scaler"]
+        scaled_features = scaler.transform(prepared_features)
+
+        model = _CACHED_ARTIFACTS["model"]
+        logits = model.predict(scaled_features)
+        probs = coral_logits_to_probs(logits)
+        predicted_rank = coral_probs_to_rank(probs).numpy()[0]
+        
+        display_cols = [
+            'Return_252D', 'Price_vs_SMA200D', 'Price_vs_SMA50D', 'P_E_Ratio', 
+            'ttm_eps', 'Sharpe_Ratio_252D', 'volatility_252D', 'roa_ttm', 
+            'ATR_252D', 'gross_profit_margin_quarterly', 'net_profit_margin_quarterly'
+        ]
+        existing_display_cols = [col for col in display_cols if col in latest_raw_features.columns]
+        display_features = latest_raw_features[existing_display_cols].replace({np.nan: None}).to_dict(orient='records')[0]
+
+        return {
+            "ticker": ticker_symbol,
+            "model_version": model_run_id,
+            "predicted_rating": int(predicted_rank),
+            "prediction_probabilities": [float(p) for p in probs[0]],
+            "timestamp": datetime.now().isoformat(),
+            "features_for_display": display_features
+        }
     except Exception as e:
-        print(f"Error during prediction: {str(e)}")
-        return 0
+        import traceback
+        return {"error": str(e), "trace": traceback.format_exc()}
+
+def get_latest_model_run_id() -> str:
+    """Finds the ID of the most recently trained model run."""
+    try:
+        all_runs = sorted([
+            d for d in os.listdir(config.MODELS_DIR) 
+            if os.path.isdir(os.path.join(config.MODELS_DIR, d))
+        ])
+        return all_runs[-1] if all_runs else None
+    except (FileNotFoundError, IndexError):
+        return None

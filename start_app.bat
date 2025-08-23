@@ -1,14 +1,18 @@
 @echo off
-echo Starting the application...
+title Launcher
 
-:: Start backend server
-start cmd /k "cd backend && ..\venv_tf\Scripts\activate && set PYTHONPATH=%PYTHONPATH%;%CD% && python app.py"
+echo Starting application components...
 
-:: Wait for backend to start
-timeout /t 5
+echo Launching Backend Server...
+start "Backend Server - Flask" cmd /k "call .\venv_tf\Scripts\activate && python -m backend.app"
 
-:: Start frontend server
-start cmd /k "cd frontend && npm run dev"
+timeout /t 3 > nul
 
-echo Application started! Backend is running on http://localhost:5000
-echo Frontend is running on http://localhost:5173 
+echo Launching Frontend Server...
+start "Frontend Server - Vite" cmd /k "cd frontend && npm run dev"
+
+echo.
+echo Two server windows have been launched. This window will now close.
+timeout /t 2 > nul
+
+exit

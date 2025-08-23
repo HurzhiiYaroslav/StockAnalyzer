@@ -1,0 +1,81 @@
+
+.tabs {
+  display: flex;
+  margin-bottom: 0;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.tab {
+  padding: 10px 28px;
+  background: #f3f4f6;
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  margin-right: 4px;
+  color: #1e293b;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  position: relative;
+  top: 1px;
+}
+
+.tab:focus {
+  outline: none;
+}
+
+.tab.active {
+  background: #fff;
+  color: #6366f1;
+}
+
+.tab:not(.active) {
+  color: #475569;
+}
+
+.tab:not(.active):hover {
+  color: #6366f1;
+  background-color: #eeeeee;
+}
+
+.tabContent {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.welcomeMessage {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #64748b;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.welcomeMessage h2 {
+  margin-bottom: 1rem;
+  color: #1e293b;
+}
+
+@media (max-width: 600px) {
+  .tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .tabs {
+    font-size: 1.15rem;
+    gap: 1.5rem;
+  }
+  .tab {
+    padding: 16px 38px;
+    font-size: 1.15rem;
+  }
+}

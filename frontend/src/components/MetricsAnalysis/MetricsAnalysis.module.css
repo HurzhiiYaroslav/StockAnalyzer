@@ -1,0 +1,121 @@
+.metricsAnalysis {
+  background-color: white;
+  border-radius: 0 12px 12px 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.metricsAnalysis h2 {
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 1.25rem;
+  margin: 0 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+}
+
+.featuresList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.featureItem {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.featureContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+}
+
+.featureName {
+  font-weight: 500;
+  color: #475569;
+  min-width: 250px;
+  text-align: left;
+}
+
+.featureValue {
+  font-weight: 600;
+}
+
+.featureEvaluation {
+  font-weight: 500;
+  font-size: 0.875rem;
+  opacity: 0.9;
+}
+
+.positive {
+  color: #16a34a;
+}
+
+.neutral {
+  color: #d97706;
+}
+
+.negative {
+  color: #dc2626;
+}
+
+.featureInfo {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.infoIcon {
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.infoIcon:hover {
+  color: #1e293b;
+  background-color: #f1f5f9;
+}
+
+.tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 120%;
+  right: -10px;
+  background-color: #1e293b;
+  color: white;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  width: 280px;
+  z-index: 10;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  text-align: left;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 15px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+.featureInfo:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+  transform: translateY(0);
+}
